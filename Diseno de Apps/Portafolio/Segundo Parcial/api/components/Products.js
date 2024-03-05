@@ -5,6 +5,7 @@ import {
   View,
   Text,
   StyleSheet,
+  Image,
   ActivityIndicator,
   FlatList,
 } from "react-native";
@@ -32,6 +33,8 @@ export default function Products() {
       );
   }, []);
 
+  // console.log(data);
+
   const getContent = () => {
     if (isLoading) {
       return (
@@ -45,16 +48,21 @@ export default function Products() {
       );
     }
     if (error) {
-      return <Text>Error</Text>;
+      return <Text style={styles.textSize}>Error: {error}</Text>;
     }
+
     return (
-      <View>
+      <View style={styles.flatListContainer}>
         <FlatList
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           data={data}
           renderItem={({ item }) => (
             <View>
-              <Text>{item.title}</Text>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.image}
+              />
+              <Text>Name: {item.title}</Text>
             </View>
           )}
         />
@@ -68,5 +76,16 @@ export default function Products() {
 const styles = StyleSheet.create({
   textSize: {
     fontSize: 20,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  flatListContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
   },
 });
