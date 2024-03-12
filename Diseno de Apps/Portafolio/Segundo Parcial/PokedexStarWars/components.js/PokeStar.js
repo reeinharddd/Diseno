@@ -9,7 +9,7 @@ import {
   FlatList,
 } from "react-native-web";
 
-const url = "https://swapi.dev/api/people";
+const url = "https://swapi.py4e.com/api/people";
 
 export default function PokeStar() {
   const [data, setData] = useState(null);
@@ -17,18 +17,19 @@ export default function PokeStar() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(url)
-      .then((response) => response.json())
-      .then(
-        (result) => {
-          setData(result.results);
-          setIsLoading(false);
-        },
-        (error) => {
-          setError(error);
-          setIsLoading(false);
-        }
-      );
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url);
+        const result = await response.json();
+        setData(result.results);
+        setIsLoading(false);
+      } catch (error) {
+        setError(error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   console.log(data);
@@ -53,6 +54,7 @@ export default function PokeStar() {
       <View>
         <FlatList
           data={data}
+          keyExtractor={(item) => item.name}
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <Text>Name: {item.name}</Text>
@@ -80,10 +82,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    boxShadowColor: "black",
-    boxShadowOffset: { width: 0, height: 2 },
-    boxShadowRadius: 6,
-    boxShadowOpacity: 0.26,
+    elevation: 5, // Add elevation for shadow effect
     marginTop: 20,
   },
   image: {},
