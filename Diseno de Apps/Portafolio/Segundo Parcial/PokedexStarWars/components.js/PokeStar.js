@@ -1,13 +1,10 @@
 /** @format */
 
+import React from "react";
 import { useState, useEffect } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  FlatList,
-} from "react-native-web";
+import { DataTable, ActivityIndicator } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
+import { FlatList } from "react-native-web";
 
 const url = "https://swapi.py4e.com/api/people";
 
@@ -39,7 +36,6 @@ export default function PokeStar() {
     if (isLoading) {
       return (
         <View>
-          <Text>Loading Data</Text>
           <ActivityIndicator
             size='large'
             color='green'
@@ -48,45 +44,46 @@ export default function PokeStar() {
       );
     }
     if (error) {
-      return <Text>Error</Text>;
+      return (
+        <View>
+          <Text>Error</Text>
+        </View>
+      );
     }
+
     return (
       <View>
-        <FlatList
-          data={data}
-          keyExtractor={(item) => item.name}
-          renderItem={({ item }) => (
-            <View style={styles.cardContainer}>
-              <Text>Name: {item.name}</Text>
-              <Text>Height: {item.height}</Text>
-              <Text>Weight: {item.mass}</Text>
-              <Text>Created: {item.created} </Text>
-              <Text>Edited: {item.edited} </Text>
-            </View>
-          )}
-        />
+        <DataTable>
+          <DataTable.Header>
+            <DataTable.Title>Name</DataTable.Title>
+            <DataTable.Title>Height</DataTable.Title>
+            <DataTable.Title>Weight</DataTable.Title>
+            <DataTable.Title>Created</DataTable.Title>
+            <DataTable.Title>Edited</DataTable.Title>
+          </DataTable.Header>
+
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.name}
+            renderItem={({ item }) => (
+              <DataTable.Row>
+                <DataTable.Cell>{item.name}</DataTable.Cell>
+                <DataTable.Cell>{item.height}</DataTable.Cell>
+                <DataTable.Cell>{item.mass}</DataTable.Cell>
+                <DataTable.Cell>{item.created}</DataTable.Cell>
+                <DataTable.Cell>{item.edited}</DataTable.Cell>
+              </DataTable.Row>
+            )}
+          />
+        </DataTable>
       </View>
     );
   };
 
   return <View>{getContent()}</View>;
 }
+
 const styles = StyleSheet.create({
-  textProps: {
-    fontSize: 20,
-    color: "red",
-  },
-  cardContainer: {
-    backgroundColor: "lightblue",
-    borderRadius: 10,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5, // Add elevation for shadow effect
-    marginTop: 20,
-  },
-  image: {},
-  errorStyle: {},
   container: {
     flex: 1,
     backgroundColor: "#fff",
