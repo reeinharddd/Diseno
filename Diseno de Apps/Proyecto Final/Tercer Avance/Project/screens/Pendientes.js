@@ -12,6 +12,7 @@ import {
 import { Card } from "react-native-elements";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { Feather } from "@expo/vector-icons";
 
 const PendientesScreen = ({ navigation }) => {
   const [solicitudesPendientes, setSolicitudesPendientes] = useState([]);
@@ -25,7 +26,7 @@ const PendientesScreen = ({ navigation }) => {
 
   const obtenerSolicitudesPendientes = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/pendientes", {
+      const response = await axios.get("http://localhost:3000/pendientes1", {
         timeout: 5000,
       });
       setSolicitudesPendientes(response.data);
@@ -41,13 +42,10 @@ const PendientesScreen = ({ navigation }) => {
 
   const aprobarSolicitud = async () => {
     try {
-      const updatedSolicitudes = solicitudesPendientes.map((solicitud) => {
-        if (solicitud.idSolicitud === selectedSolicitud.idSolicitud) {
-          return { ...solicitud, estadoSolicitud: "Autorizado" };
-        }
-        return solicitud;
-      });
-      setSolicitudesPendientes(updatedSolicitudes);
+      const updatedSolicitudesPendientes = solicitudesPendientes.filter(
+        (solicitud) => solicitud.idSolicitud !== selectedSolicitud.idSolicitud
+      );
+      setSolicitudesPendientes(updatedSolicitudesPendientes);
 
       await axios.post(
         `http://localhost:3000/aprobar/${selectedSolicitud.idSolicitud}`
@@ -61,13 +59,10 @@ const PendientesScreen = ({ navigation }) => {
 
   const desaprobarSolicitud = async () => {
     try {
-      const updatedSolicitudes = solicitudesPendientes.map((solicitud) => {
-        if (solicitud.idSolicitud === selectedSolicitud.idSolicitud) {
-          return { ...solicitud, estadoSolicitud: "Denegado" };
-        }
-        return solicitud;
-      });
-      setSolicitudesPendientes(updatedSolicitudes);
+      const updatedSolicitudesPendientes = solicitudesPendientes.filter(
+        (solicitud) => solicitud.idSolicitud !== selectedSolicitud.idSolicitud
+      );
+      setSolicitudesPendientes(updatedSolicitudesPendientes);
 
       await axios.post(
         `http://localhost:3000/desaprobar/${selectedSolicitud.idSolicitud}`
@@ -102,7 +97,7 @@ const PendientesScreen = ({ navigation }) => {
                   Justificación: {solicitud.justificacion}
                 </Text>
               </View>
-              <Ionicons name='arrow-forward' size={24} color='black' />
+              <Feather name='plus-circle' size={24} color='black' />
             </TouchableOpacity>
           </Card>
         ))}
@@ -112,45 +107,41 @@ const PendientesScreen = ({ navigation }) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalView}>
-          <Text style={styles.modalTitle}>Detalles de la Solicitud</Text>
-          {selectedSolicitud && (
-            <View>
-              <Text>ID Solicitud: {selectedSolicitud.idSolicitud}</Text>
-              <Text>Fecha Solicitud: {selectedSolicitud.fechaSolicitud}</Text>
-              <Text>Estado Solicitud: {selectedSolicitud.estadoSolicitud}</Text>
-              <Text>Justificación: {selectedSolicitud.justificacion}</Text>
-              <Text>Comentario: {selectedSolicitud.comentario}</Text>
-              <Text>Cantidad: {selectedSolicitud.cantidad}</Text>
-              <Text>Nombre Usuario: {selectedSolicitud.nombreUsuario}</Text>
-              <Text>Nombre Producto: {selectedSolicitud.nombreProducto}</Text>
-              <Text>Prioridad: {selectedSolicitud.prioridad}</Text>
-              <Text>Estado Entrega: {selectedSolicitud.estadoEntrega}</Text>
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={() => aprobarSolicitud()}
-            style={[styles.openButton, { backgroundColor: "green" }]}>
-            <Text style={styles.textStyle}>Aprobar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => desaprobarSolicitud()}
-            style={[styles.openButton, { backgroundColor: "red" }]}>
-            <Text style={styles.textStyle}>Desaprobar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setModalVisible(false)}
-            style={styles.openButton}>
-            <Text style={styles.textStyle}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.modalBackground}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Detalles de la Solicitud</Text>
+            {selectedSolicitud && <View>{/* Detalles de la solicitud */}</View>}
+            <TouchableOpacity
+              onPress={() => aprobarSolicitud()}
+              style={[styles.openButton, styles.aprobarButton]}>
+              <Text style={styles.textStyle}>Aprobar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => desaprobarSolicitud()}
+              style={[styles.openButton, styles.desaprobarButton]}>
+              <Text style={styles.textStyle}>Desaprobar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={[styles.openButton, styles.cancelarButton]}>
+              <Text style={[styles.textStyle, styles.cancelarText]}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
 
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}>
-        <Ionicons name='arrow-back' size={24} color='black' />
-      </TouchableOpacity>
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
+          <Ionicons name='arrow-back' size={24} color='white' />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -220,13 +211,55 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   backButton: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
+    flex: 1,
     padding: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "black",
     elevation: 4,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+    elevation: 5,
+  },
+  openButton: {
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 5,
+    width: "100%",
+    alignItems: "center",
+  },
+  aprobarButton: {
+    backgroundColor: "green",
+    elevation: 3,
+  },
+  desaprobarButton: {
+    backgroundColor: "red",
+    elevation: 3,
+  },
+  cancelarButton: {
+    borderColor: "black",
+    borderWidth: 1,
+  },
+  cancelarText: {
+    color: "black",
   },
 });
 

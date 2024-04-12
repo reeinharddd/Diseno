@@ -1,10 +1,18 @@
 /** @format */
 
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import { Card } from "react-native-elements";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { Feather } from "@expo/vector-icons";
 
 const AprobadasScreen = ({ navigation }) => {
   const [solicitudesAprobadas, setSolicitudesAprobadas] = useState([]);
@@ -35,64 +43,77 @@ const AprobadasScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Solicitudes Aprobadas</Text>
-      {solicitudesAprobadas.map((solicitud, index) => (
-        <Card key={solicitud.idSolicitud} containerStyle={styles.card}>
-          <TouchableOpacity
-            onPress={() => mostrarDetalles(solicitud)}
-            onPressIn={() => setSelectedRow(index)}
-            onPressOut={() => setSelectedRow(null)}
-            activeOpacity={0.8}
-            style={[styles.row, selectedRow === index && styles.selectedRow]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>
-                ID Solicitud: {solicitud.idSolicitud}
-              </Text>
-              <Text style={styles.cardText}>
-                Fecha Solicitud: {solicitud.fechaSolicitud}
-              </Text>
-              <Text style={styles.cardText}>
-                Justificación: {solicitud.justificacion}
-              </Text>
-            </View>
-            <Ionicons name='arrow-forward' size={24} color='black' />
-          </TouchableOpacity>
-        </Card>
-      ))}
+      <ScrollView>
+        {solicitudesAprobadas.map((solicitud, index) => (
+          <Card key={solicitud.idSolicitud} containerStyle={styles.card}>
+            <TouchableOpacity
+              onPress={() => mostrarDetalles(solicitud)}
+              onPressIn={() => setSelectedRow(index)}
+              onPressOut={() => setSelectedRow(null)}
+              activeOpacity={0.8}
+              style={[styles.row, selectedRow === index && styles.selectedRow]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>
+                  ID Solicitud: {solicitud.idSolicitud}
+                </Text>
+                <Text style={styles.cardText}>
+                  Fecha Solicitud: {solicitud.fechaSolicitud}
+                </Text>
+                <Text style={styles.cardText}>
+                  Justificación: {solicitud.justificacion}
+                </Text>
+              </View>
+              <Feather name='plus-circle' size={24} color='black' />
+            </TouchableOpacity>
+          </Card>
+        ))}
+      </ScrollView>
       <Modal
         animationType='slide'
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalView}>
-          <Text style={styles.modalTitle}>Detalles de la Solicitud</Text>
-          {selectedSolicitud && (
-            <View>
-              <Text>ID Solicitud: {selectedSolicitud.idSolicitud}</Text>
-              <Text>Fecha Solicitud: {selectedSolicitud.fechaSolicitud}</Text>
-              <Text>Estado Solicitud: {selectedSolicitud.estadoSolicitud}</Text>
-              <Text>Justificación: {selectedSolicitud.justificacion}</Text>
-              <Text>Comentario: {selectedSolicitud.comentario}</Text>
-              <Text>Cantidad: {selectedSolicitud.cantidad}</Text>
-              <Text>Nombre Usuario: {selectedSolicitud.nombreUsuario}</Text>
-              <Text>Nombre Producto: {selectedSolicitud.nombreProducto}</Text>
-              <Text>Prioridad: {selectedSolicitud.prioridad}</Text>
-              <Text>Estado Entrega: {selectedSolicitud.estadoEntrega}</Text>
-              {/* Agrega más detalles aquí según la estructura de tu objeto de solicitud */}
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={() => setModalVisible(false)}
-            style={styles.openButton}>
-            <Text style={styles.textStyle}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.modalBackground}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Detalles de la Solicitud</Text>
+            {selectedSolicitud && (
+              <View>
+                <Text>ID Solicitud: {selectedSolicitud.idSolicitud}</Text>
+                <Text>Fecha Solicitud: {selectedSolicitud.fechaSolicitud}</Text>
+                <Text>
+                  Estado Solicitud: {selectedSolicitud.estadoSolicitud}
+                </Text>
+                <Text>Justificación: {selectedSolicitud.justificacion}</Text>
+                <Text>Comentario: {selectedSolicitud.comentario}</Text>
+                <Text>Cantidad: {selectedSolicitud.cantidad}</Text>
+                <Text>Nombre Usuario: {selectedSolicitud.nombreUsuario}</Text>
+                <Text>Nombre Producto: {selectedSolicitud.nombreProducto}</Text>
+                <Text>Prioridad: {selectedSolicitud.prioridad}</Text>
+                <Text>Estado Entrega: {selectedSolicitud.estadoEntrega}</Text>
+                {/* Agrega más detalles aquí según la estructura de tu objeto de solicitud */}
+              </View>
+            )}
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={[styles.openButton, styles.cancelarButton]}>
+              <Text style={[styles.textStyle, styles.cancelarText]}>
+                Cerrar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
 
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}>
-        <Ionicons name='arrow-back' size={24} color='black' />
-      </TouchableOpacity>
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
+          <Ionicons name='arrow-back' size={24} color='white' />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -137,11 +158,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  modalView: {
+  modalBackground: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 24,
@@ -149,25 +178,39 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   openButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 20,
+    borderRadius: 10,
     padding: 10,
-    elevation: 2,
-    marginTop: 10,
+    marginVertical: 5,
+    width: "60%",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "white",
   },
   textStyle: {
-    color: "white",
+    color: "#333",
     fontWeight: "bold",
     textAlign: "center",
   },
-  backButton: {
+  cancelButton: {
+    backgroundColor: "#FF6347",
+  },
+  cancelarText: {
+    color: "black",
+  },
+  bottomBar: {
     position: "absolute",
-    bottom: 16,
-    left: 16,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "black",
     elevation: 4,
+    topPadding: 10,
+  },
+  backButton: {
+    padding: 8,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
   },
 });
 

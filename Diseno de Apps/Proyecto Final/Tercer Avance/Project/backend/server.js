@@ -159,12 +159,39 @@ app.get("/pendientes", (req, res) => {
         .json({ error: "Error al obtener las solicitudes pendientes" });
       return;
     }
+    const totalPendientes = results.length;
+
+    // Si no hay error, enviar los resultados al cliente en formato JSON
+    res.json({ pendientes: results, totalPendientes });
+  });
+});
+app.get("/pendientes1", (req, res) => {
+  // Consulta SQL para obtener las solicitudes pendientes con información detallada
+  const sqlQuery = `
+    SELECT s.idSolicitud, s.fechaSolicitud, s.estadoSolicitud, s.justificacion, s.comentario, 
+           s.cantidad, CONCAT(u.first_name, ' ', u.last_name) AS nombreUsuario, 
+           p.nomProducto AS nombreProducto, pr.nombre AS prioridad, s.estadoEntrega 
+    FROM solicitudes s
+    INNER JOIN usuarios u ON s.idSolicitudUser = u.user_id
+    INNER JOIN productos p ON s.idSolicitudProducto = p.idProducto
+    INNER JOIN prioridades pr ON s.idPrioridad = pr.idPrioridad
+    WHERE s.estadoSolicitud = 'Pendiente'
+    ORDER BY s.idSolicitud ASC;`;
+
+  // Ejecutar la consulta
+  connection.query(sqlQuery, (err, results) => {
+    if (err) {
+      // En caso de error, enviar una respuesta de error al cliente
+      res
+        .status(500)
+        .json({ error: "Error al obtener las solicitudes pendientes" });
+      return;
+    }
 
     // Si no hay error, enviar los resultados al cliente en formato JSON
     res.json(results);
   });
 });
-
 app.post("/aprobar/:idSolicitud", (req, res) => {
   const { idSolicitud } = req.params;
 

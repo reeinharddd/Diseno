@@ -1,23 +1,25 @@
 /** @format */
 
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { useTheme } from "react-native-paper";
+import { useTheme, FAB } from "react-native-paper";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { Avatar } from "react-native-paper";
+import { FontAwesome } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Aprobadas from "./Aprobadas";
 import Pendientes from "./Pendientes";
 import Desaprobadas from "./Desaprobadas";
 import CerrarSesion from "./Cerrarsesion";
-import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { FontAwesome } from "@expo/vector-icons";
-
+import { TouchableOpacity } from "react-native-gesture-handler";
+import { useFocusEffect } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
 const Drawer = createDrawerNavigator();
 
 const HomeScreen = () => {
   const [username, setUsername] = useState("");
+  const [totalPendientes, setTotalPendientes] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -35,16 +37,50 @@ const HomeScreen = () => {
     fetchUserData();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTotalPendientes = async () => {
+        try {
+          const response = await fetch("http://localhost:3000/pendientes");
+          const data = await response.json();
+
+          let totalPendientesNum = 0;
+
+          if (data && data.totalPendientes) {
+            totalPendientesNum = data.totalPendientes;
+          } else {
+            console.error(
+              "No se pudo obtener el número total de pendientes desde la API"
+            );
+          }
+
+          setTotalPendientes(totalPendientesNum);
+        } catch (error) {
+          console.error(
+            "Error al obtener el número total de pendientes:",
+            error
+          );
+        }
+      };
+
+      fetchTotalPendientes();
+    }, [])
+  );
   return (
     <Drawer.Navigator
       initialRouteName='Home'
       drawerContent={(props) => (
         <CustomDrawerContent {...props} username={username} />
       )}>
-      <Drawer.Screen
-        name='Home'
-        component={() => <HomeContent username={username} />}
-      />
+      <Drawer.Screen name='Home'>
+        {(props) => (
+          <HomeContent
+            {...props}
+            username={username}
+            totalPendientes={totalPendientes}
+          />
+        )}
+      </Drawer.Screen>
       <Drawer.Screen name='Aprobadas' component={Aprobadas} />
       <Drawer.Screen name='Pendientes' component={Pendientes} />
       <Drawer.Screen name='Desaprobadas' component={Desaprobadas} />
@@ -53,8 +89,7 @@ const HomeScreen = () => {
   );
 };
 
-const HomeContent = ({ username }) => {
-  const navigation = useNavigation();
+const HomeContent = ({ navigation, username, totalPendientes }) => {
   const { colors } = useTheme();
 
   const handleBoxPress = (screenName) => {
@@ -64,46 +99,50 @@ const HomeContent = ({ username }) => {
   return (
     <View style={styles.container}>
       <Text style={[styles.welcomeText, { color: colors.text }]}>
-        ¡Bienvenido, {username}!
+        ¿Qué solicitudes deseas revisar hoy, {username}?
       </Text>
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.primary }]}
-        onPress={() => handleBoxPress("Aprobadas")}>
-        <Text style={styles.buttonText}>Solicitudes Aprobadas</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.primary }]}
-        onPress={() => handleBoxPress("Pendientes")}>
-        <Text style={styles.buttonText}>Solicitudes Pendientes</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.primary }]}
-        onPress={() => handleBoxPress("Desaprobadas")}>
-        <Text style={styles.buttonText}>Solicitudes Desaprobadas</Text>
-      </TouchableOpacity>
+
+      <View style={styles.notificationContainer}>
+        <TouchableOpacity onPress={() => handleBoxPress("Pendientes")}>
+          <View style={styles.notificationBadge}>
+            <Text style={styles.notificationText}>{totalPendientes}</Text>
+            <FontAwesome name='bell' size={24} color='red' />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <FAB
+        style={[styles.fab, styles.pendientesFab]}
+        icon='file-document-outline'
+        label={`Solicitudes Pendientes (${totalPendientes})`}
+        onPress={() => handleBoxPress("Pendientes")}
+      />
+      <View style={styles.buttonRow}>
+        <FAB
+          style={[
+            styles.fab,
+            { backgroundColor: colors.primary, width: "45%" },
+          ]}
+          icon='check-circle-outline'
+          label='Solicitudes Aprobadas'
+          onPress={() => handleBoxPress("Aprobadas")}
+        />
+        <FAB
+          style={[
+            styles.fab,
+            { backgroundColor: colors.primary, width: "45%" },
+          ]}
+          icon='close-circle-outline'
+          label='Solicitudes Desaprobadas'
+          onPress={() => handleBoxPress("Desaprobadas")}
+        />
+      </View>
     </View>
   );
 };
 
 const CustomDrawerContent = ({ navigation, username }) => {
   const { colors } = useTheme();
-  const [profilePic, setProfilePic] = useState("");
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem("user");
-        if (userData !== null) {
-          const { profilePic } = JSON.parse(userData);
-          setProfilePic(profilePic);
-        }
-      } catch (error) {
-        console.error("Error al obtener datos del usuario:", error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -120,7 +159,7 @@ const CustomDrawerContent = ({ navigation, username }) => {
       <View style={styles.drawerHeader}>
         <Avatar.Image
           size={64}
-          source={<FontAwesome name='user' size={64} color='black' />}
+          source={require("../resources/users-vector-icon-png_260862.jpg")} // Cambiar la ruta según la ubicación de tu imagen
         />
         <Text style={[styles.drawerHeaderText, { color: colors.text }]}>
           {username}
@@ -166,29 +205,32 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
+    paddingHorizontal: 20,
   },
   welcomeText: {
     fontSize: 24,
     marginBottom: 20,
+    textAlign: "center",
+    paddingBottom: 75,
   },
-  button: {
-    height: 60,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
+  fab: {
     marginVertical: 10,
-    width: "60%",
+    width: "100%",
   },
-  buttonText: {
-    fontSize: 18,
-    color: "#ffffff",
+  pendientesFab: {
+    marginBottom: 35,
+    padding: 15,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    padding: 10,
   },
   drawerHeader: {
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    paddingVertical: 20,
   },
   drawerHeaderText: {
     fontSize: 18,
@@ -198,6 +240,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "gray",
     marginVertical: 10,
+  },
+  notificationContainer: {
+    position: "absolute",
+    top: 20, // Ajusta la distancia desde la parte superior
+    right: 20, // Ajusta la distancia desde la derecha
   },
 });
 
