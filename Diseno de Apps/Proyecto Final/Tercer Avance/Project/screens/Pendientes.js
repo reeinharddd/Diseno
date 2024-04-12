@@ -1,85 +1,233 @@
 /** @format */
 
-import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, FlatList } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { Card } from "react-native-elements";
+import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
 
-const initialData = [
-  { id: 1, tarea: "Tarea 1", completa: false },
-  { id: 2, tarea: "Tarea 2", completa: true },
-  { id: 3, tarea: "Tarea 3", completa: false },
-];
+const PendientesScreen = ({ navigation }) => {
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState([]);
+  const [selectedSolicitud, setSelectedSolicitud] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
 
-const Pendientes = () => {
-  const navigation = useNavigation();
+  useEffect(() => {
+    obtenerSolicitudesPendientes();
+  }, []);
 
-  const [data, setData] = useState(initialData);
-
-  const handleToggleComplete = (id) => {
-    setData((prevState) =>
-      prevState.map((item) =>
-        item.id === id ? { ...item, completa: !item.completa } : item
-      )
-    );
+  const obtenerSolicitudesPendientes = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/pendientes", {
+        timeout: 5000,
+      });
+      setSolicitudesPendientes(response.data);
+    } catch (error) {
+      console.error("Error al obtener las solicitudes pendientes:", error);
+    }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.item}>
-      <Text style={styles.text}>{item.tarea}</Text>
-      <Button
-        title={item.completa ? "Completada" : "Marcar como completa"}
-        onPress={() => handleToggleComplete(item.id)}
-      />
-    </View>
-  );
+  const mostrarDetalles = (solicitud) => {
+    setSelectedSolicitud(solicitud);
+    setModalVisible(true);
+  };
+
+  const aprobarSolicitud = async () => {
+    try {
+      const updatedSolicitudes = solicitudesPendientes.map((solicitud) => {
+        if (solicitud.idSolicitud === selectedSolicitud.idSolicitud) {
+          return { ...solicitud, estadoSolicitud: "Autorizado" };
+        }
+        return solicitud;
+      });
+      setSolicitudesPendientes(updatedSolicitudes);
+
+      await axios.post(
+        `http://localhost:3000/aprobar/${selectedSolicitud.idSolicitud}`
+      );
+
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error al aprobar la solicitud:", error);
+    }
+  };
+
+  const desaprobarSolicitud = async () => {
+    try {
+      const updatedSolicitudes = solicitudesPendientes.map((solicitud) => {
+        if (solicitud.idSolicitud === selectedSolicitud.idSolicitud) {
+          return { ...solicitud, estadoSolicitud: "Denegado" };
+        }
+        return solicitud;
+      });
+      setSolicitudesPendientes(updatedSolicitudes);
+
+      await axios.post(
+        `http://localhost:3000/desaprobar/${selectedSolicitud.idSolicitud}`
+      );
+
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error al desaprobar la solicitud:", error);
+    }
+  };
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.header}>
-        <Text style={[styles.text, styles.headerText]}>Tarea</Text>
-        <Text style={[styles.text, styles.headerText]}>Estado</Text>
-      </View>
-      <FlatList
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-      />
-      <Button
+    <View style={styles.container}>
+      <Text style={styles.title}>Solicitudes Pendientes</Text>
+      <ScrollView>
+        {solicitudesPendientes.map((solicitud, index) => (
+          <Card key={solicitud.idSolicitud} containerStyle={styles.card}>
+            <TouchableOpacity
+              onPress={() => mostrarDetalles(solicitud)}
+              onPressIn={() => setSelectedRow(index)}
+              onPressOut={() => setSelectedRow(null)}
+              activeOpacity={0.8}
+              style={[styles.row, selectedRow === index && styles.selectedRow]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>
+                  ID Solicitud: {solicitud.idSolicitud}
+                </Text>
+                <Text style={styles.cardText}>
+                  Fecha Solicitud: {solicitud.fechaSolicitud}
+                </Text>
+                <Text style={styles.cardText}>
+                  Justificación: {solicitud.justificacion}
+                </Text>
+              </View>
+              <Ionicons name='arrow-forward' size={24} color='black' />
+            </TouchableOpacity>
+          </Card>
+        ))}
+      </ScrollView>
+      <Modal
+        animationType='slide'
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalView}>
+          <Text style={styles.modalTitle}>Detalles de la Solicitud</Text>
+          {selectedSolicitud && (
+            <View>
+              <Text>ID Solicitud: {selectedSolicitud.idSolicitud}</Text>
+              <Text>Fecha Solicitud: {selectedSolicitud.fechaSolicitud}</Text>
+              <Text>Estado Solicitud: {selectedSolicitud.estadoSolicitud}</Text>
+              <Text>Justificación: {selectedSolicitud.justificacion}</Text>
+              <Text>Comentario: {selectedSolicitud.comentario}</Text>
+              <Text>Cantidad: {selectedSolicitud.cantidad}</Text>
+              <Text>Nombre Usuario: {selectedSolicitud.nombreUsuario}</Text>
+              <Text>Nombre Producto: {selectedSolicitud.nombreProducto}</Text>
+              <Text>Prioridad: {selectedSolicitud.prioridad}</Text>
+              <Text>Estado Entrega: {selectedSolicitud.estadoEntrega}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={() => aprobarSolicitud()}
+            style={[styles.openButton, { backgroundColor: "green" }]}>
+            <Text style={styles.textStyle}>Aprobar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => desaprobarSolicitud()}
+            style={[styles.openButton, { backgroundColor: "red" }]}>
+            <Text style={styles.textStyle}>Desaprobar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setModalVisible(false)}
+            style={styles.openButton}>
+            <Text style={styles.textStyle}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      <TouchableOpacity
         onPress={() => navigation.goBack()}
-        title='Volver'
-        color='black'
-        style={styles.button}
-      />
+        style={styles.backButton}>
+        <Ionicons name='arrow-back' size={24} color='black' />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#f0f0f0",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  card: {
+    marginBottom: 12,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    elevation: 4,
+  },
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    paddingVertical: 12,
   },
-  headerText: {
+  selectedRow: {
+    backgroundColor: "#e0e0e0",
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  cardText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  modalView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalTitle: {
+    fontSize: 24,
+    marginBottom: 16,
     fontWeight: "bold",
   },
-  item: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  openButton: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    marginVertical: 5,
+    width: 150,
+    alignItems: "center",
   },
-  text: {
-    fontSize: 16,
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
   },
-  button: {
-    marginLeft: 10,
+  backButton: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    elevation: 4,
   },
 });
 
-export default Pendientes;
+export default PendientesScreen;

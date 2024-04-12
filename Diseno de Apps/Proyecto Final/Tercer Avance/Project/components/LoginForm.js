@@ -1,20 +1,53 @@
 /** @format */
 
-import React, { useState } from "react";
-import { View, TextInput, Button, Alert, StyleSheet, Text } from "react-native"; // Importa Text de react-native
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ImageBackground,
+  Modal,
+  TouchableWithoutFeedback,
+  Image,
+} from "react-native";
+import { TextInput, Button, Text, useTheme, Portal } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const LoginForm = () => {
+  const { colors } = useTheme();
   const navigation = useNavigation();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [user, setUser] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    const verificarSesion = async () => {
+      try {
+        const sessionToken = await AsyncStorage.getItem("sessionToken");
+        if (sessionToken) {
+          const userData = await AsyncStorage.getItem("user");
+          setUser(JSON.parse(userData));
+          navigation.navigate("Home");
+        }
+      } catch (error) {
+        console.error("Error al verificar la sesión: ", error);
+      }
+    };
+
+    verificarSesion();
+  }, []);
 
   const handleLogin = async () => {
     try {
       if (!username || !password) {
         setError("Por favor ingresa un usuario y contraseña válidos");
+        setModalVisible(true); // Mostrar el modal inmediatamente en caso de error
         return;
       }
 
@@ -29,61 +62,151 @@ const LoginForm = () => {
       const data = await response.json();
 
       if (response.ok) {
+        await AsyncStorage.setItem("sessionToken", data.token);
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        await AsyncStorage.setItem("profilePic", data.user.profilePic);
+
+        setUser(data.user.username);
         Alert.alert("Inicio de sesión exitoso");
-        navigation.navigate("Home");
+        navigation.navigate("Home", { username: data.user.firstName });
       } else {
         setError(data.error || "Error desconocido");
+        setModalVisible(true); // Mostrar el modal en caso de error
       }
     } catch (error) {
       console.error("Error al realizar la solicitud:", error);
       setError("Error de conexión con el servidor");
+      setModalVisible(true); // Mostrar el modal en caso de error
     }
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder='Username'
-        onChangeText={setUsername}
-        value={username}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder='Password'
-        onChangeText={setPassword}
-        value={password}
-        secureTextEntry
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+    <ImageBackground
+      source={"../resources/videoplayback.mp4"} // Reemplazar con la URL correcta del video de fondo
+      style={styles.background}>
+      <View style={styles.container}>
+        <Image
+          source={require("../resources/PARAMO_LogoFinal.png")} // Reemplazar con la ruta correcta de la imagen del logo
+          style={styles.logo}
+        />
+        <Text style={styles.loginText}>Inicie sesión</Text>
 
-      <Button
-        title='Login'
-        onPress={handleLogin}
-      />
-    </View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={[styles.input, styles.inputMargin]}
+            label='Username'
+            placeholder='Ingresa tu usuario'
+            value={username}
+            onChangeText={setUsername}
+          />
+          <View style={styles.passwordInput}>
+            <TextInput
+              style={[styles.input, styles.inputMargin, styles.passwordInput]}
+              label='Password'
+              placeholder='Ingresa tu contraseña'
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <MaterialCommunityIcons
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={24}
+              color={colors.text}
+              style={styles.icon}
+              onPress={() => setShowPassword(!showPassword)}
+            />
+          </View>
+        </View>
+        <Button
+          mode='contained'
+          onPress={handleLogin}
+          style={styles.buttonContainer}
+          color='#007bff'>
+          Login
+        </Button>
+      </View>
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+          transparent
+          animationType='fade'>
+          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalText}>{error}</Text>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </Portal>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    resizeMode: "cover",
+    justifyContent: "center",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+  },
+  loginText: {
+    fontSize: 20,
+    marginBottom: 20,
+    fontWeight: "italic",
+  },
+  inputContainer: {
+    width: "70%",
+    alignItems: "center",
   },
   input: {
-    width: "50%",
-    height: 40,
-    borderWidth: 1,
-    borderColor: "gray",
-    marginVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 15,
+    width: "100%",
   },
-  error: {
-    color: "red",
-    marginBottom: 10,
+  inputMargin: {
+    marginVertical: 10,
+    backgroundColor: "#f0f8ff", // Color de fondo azul claro
+    borderRadius: 10, // Bordes redondeados
+  },
+  buttonContainer: {
+    marginTop: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    width: 200,
+  },
+  passwordInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  icon: {
+    position: "absolute",
+    right: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: "center",
   },
 });
 
