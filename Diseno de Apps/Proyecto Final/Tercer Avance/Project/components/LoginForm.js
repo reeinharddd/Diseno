@@ -14,6 +14,7 @@ import { TextInput, Button, Text, useTheme, Portal } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import logoImage from "../assets/PARAMO_LogoFinal.png";
 
 const LoginForm = () => {
   const { colors } = useTheme();
@@ -47,7 +48,7 @@ const LoginForm = () => {
     try {
       if (!username || !password) {
         setError("Por favor ingresa un usuario y contraseña válidos");
-        setModalVisible(true); // Mostrar el modal inmediatamente en caso de error
+        setModalVisible(true);
         return;
       }
 
@@ -71,24 +72,21 @@ const LoginForm = () => {
         navigation.navigate("Home", { username: data.user.firstName });
       } else {
         setError(data.error || "Error desconocido");
-        setModalVisible(true); // Mostrar el modal en caso de error
+        setModalVisible(true);
       }
     } catch (error) {
       console.error("Error al realizar la solicitud:", error);
       setError("Error de conexión con el servidor");
-      setModalVisible(true); // Mostrar el modal en caso de error
+      setModalVisible(true);
     }
   };
 
   return (
     <ImageBackground
-      source={"../resources/videoplayback.mp4"} // Reemplazar con la URL correcta del video de fondo
+      source={"../assets/videoplayback.mp4"}
       style={styles.background}>
       <View style={styles.container}>
-        <Image
-          source={require("../resources/PARAMO_LogoFinal.png")} // Reemplazar con la ruta correcta de la imagen del logo
-          style={styles.logo}
-        />
+        <Image source={logoImage} style={styles.logo} />
         <Text style={styles.loginText}>Inicie sesión</Text>
 
         <View style={styles.inputContainer}>
@@ -175,8 +173,8 @@ const styles = StyleSheet.create({
   },
   inputMargin: {
     marginVertical: 10,
-    backgroundColor: "#f0f8ff", // Color de fondo azul claro
-    borderRadius: 10, // Bordes redondeados
+    backgroundColor: "#f0f8ff",
+    borderRadius: 10,
   },
   buttonContainer: {
     marginTop: 20,

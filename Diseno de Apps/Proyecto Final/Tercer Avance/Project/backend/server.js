@@ -4,12 +4,25 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const mysql = require("mysql");
+const multer = require("multer");
 
 const app = express();
 const port = 3000;
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./images/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, `profile_${Date.now()}.${file.originalname.split(".").pop()}`);
+  },
+});
+const upload = multer({ dest: "backend/images/" });
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
 
 // const connection = mysql.createConnection({
 //   host: "193.203.166.175",
@@ -59,10 +72,8 @@ app.post("/login", (req, res) => {
       return;
     }
 
-    // Verificar si el usuario tiene un category de 3
     const user = results[0];
     if (user.category.toString() !== "3") {
-      // Compara después de convertir a cadena de texto
       res.status(403).json({ error: "Nivel de acceso no suficiente" });
       return;
     }
@@ -82,7 +93,6 @@ app.post("/login", (req, res) => {
   });
 });
 app.get("/aprobadas", (req, res) => {
-  // Consulta SQL para obtener las solicitudes aprobadas con información detallada
   const sqlQuery = `
   SELECT s.idSolicitud, s.fechaSolicitud, s.estadoSolicitud, s.justificacion, s.comentario, 
          s.cantidad, CONCAT(u.first_name, ' ', u.last_name) AS nombreUsuario, 
@@ -94,23 +104,19 @@ app.get("/aprobadas", (req, res) => {
   WHERE s.estadoSolicitud = 'Autorizado'
   ORDER BY s.idSolicitud ASC;`;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       res
         .status(500)
         .json({ error: "Error al obtener las solicitudes aprobadas" });
       return;
     }
 
-    // Si no hay error, enviar los resultados al cliente en formato JSON
     res.json(results);
   });
 });
 
 app.get("/desaprobadas", (req, res) => {
-  // Consulta SQL para obtener las solicitudes desaprobadas con información detallada
   const sqlQuery = `
   SELECT s.idSolicitud, s.fechaSolicitud, s.estadoSolicitud, s.justificacion, s.comentario, 
          s.cantidad, CONCAT(u.first_name, ' ', u.last_name) AS nombreUsuario, 
@@ -122,23 +128,19 @@ app.get("/desaprobadas", (req, res) => {
   WHERE s.estadoSolicitud = 'Denegado'
   ORDER BY s.idSolicitud ASC;`;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       res
         .status(500)
         .json({ error: "Error al obtener las solicitudes desaprobadas" });
       return;
     }
 
-    // Si no hay error, enviar los resultados al cliente en formato JSON
     res.json(results);
   });
 });
 
 app.get("/pendientes", (req, res) => {
-  // Consulta SQL para obtener las solicitudes pendientes con información detallada
   const sqlQuery = `
     SELECT s.idSolicitud, s.fechaSolicitud, s.estadoSolicitud, s.justificacion, s.comentario, 
            s.cantidad, CONCAT(u.first_name, ' ', u.last_name) AS nombreUsuario, 
@@ -150,10 +152,8 @@ app.get("/pendientes", (req, res) => {
     WHERE s.estadoSolicitud = 'Pendiente'
     ORDER BY s.idSolicitud ASC;`;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       res
         .status(500)
         .json({ error: "Error al obtener las solicitudes pendientes" });
@@ -161,12 +161,10 @@ app.get("/pendientes", (req, res) => {
     }
     const totalPendientes = results.length;
 
-    // Si no hay error, enviar los resultados al cliente en formato JSON
     res.json({ pendientes: results, totalPendientes });
   });
 });
 app.get("/pendientes1", (req, res) => {
-  // Consulta SQL para obtener las solicitudes pendientes con información detallada
   const sqlQuery = `
     SELECT s.idSolicitud, s.fechaSolicitud, s.estadoSolicitud, s.justificacion, s.comentario, 
            s.cantidad, CONCAT(u.first_name, ' ', u.last_name) AS nombreUsuario, 
@@ -178,40 +176,33 @@ app.get("/pendientes1", (req, res) => {
     WHERE s.estadoSolicitud = 'Pendiente'
     ORDER BY s.idSolicitud ASC;`;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       res
         .status(500)
         .json({ error: "Error al obtener las solicitudes pendientes" });
       return;
     }
 
-    // Si no hay error, enviar los resultados al cliente en formato JSON
     res.json(results);
   });
 });
 app.post("/aprobar/:idSolicitud", (req, res) => {
   const { idSolicitud } = req.params;
 
-  // Consulta SQL para actualizar el estado de la solicitud a 'Autorizado'
   const sqlQuery = `
     UPDATE solicitudes 
     SET estadoSolicitud = 'Autorizado' 
     WHERE idSolicitud = ?;
   `;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, [idSolicitud], (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       console.error("Error al actualizar el estado de la solicitud:", err);
       res.status(500).json({ error: "Error interno del servidor" });
       return;
     }
 
-    // Si la actualización se realizó correctamente, enviar una respuesta de éxito al cliente
     res.json({ message: "Solicitud aprobada exitosamente" });
   });
 });
@@ -219,24 +210,171 @@ app.post("/aprobar/:idSolicitud", (req, res) => {
 app.post("/desaprobar/:idSolicitud", (req, res) => {
   const { idSolicitud } = req.params;
 
-  // Consulta SQL para actualizar el estado de la solicitud a 'Denegado'
   const sqlQuery = `
     UPDATE solicitudes 
     SET estadoSolicitud = 'Denegado' 
     WHERE idSolicitud = ?;
   `;
 
-  // Ejecutar la consulta
   connection.query(sqlQuery, [idSolicitud], (err, results) => {
     if (err) {
-      // En caso de error, enviar una respuesta de error al cliente
       console.error("Error al actualizar el estado de la solicitud:", err);
       res.status(500).json({ error: "Error interno del servidor" });
       return;
     }
 
-    // Si la actualización se realizó correctamente, enviar una respuesta de éxito al cliente
     res.json({ message: "Solicitud desaprobada exitosamente" });
+  });
+});
+app.get("/usuarios/activos", (req, res) => {
+  const sqlQuery = `
+    SELECT * FROM usuarios 
+    WHERE status = 'activo'
+        ORDER BY category ASC;
+;
+  `;
+
+  connection.query(sqlQuery, (err, results) => {
+    if (err) {
+      console.error("Error al obtener los usuarios activos:", err);
+      res.status(500).json({ error: "Error interno del servidor" });
+      return;
+    }
+
+    res.json(results);
+  });
+});
+
+app.get("/usuarios/inactivos", (req, res) => {
+  const sqlQuery = `
+    SELECT * FROM usuarios 
+    WHERE status = 'inactivo'
+        ORDER BY category ASC;
+;
+  `;
+
+  connection.query(sqlQuery, (err, results) => {
+    if (err) {
+      console.error("Error al obtener los usuarios inactivos:", err);
+      res.status(500).json({ error: "Error interno del servidor" });
+      return;
+    }
+
+    res.json(results);
+  });
+});
+app.put("/usuarios/:idUsuario", (req, res) => {
+  const { idUsuario } = req.params;
+  const { status } = req.body;
+
+  const sqlQuery = `
+    UPDATE usuarios
+    SET status = ?
+    WHERE user_id = ?;
+  `;
+
+  connection.query(sqlQuery, [status, idUsuario], (err, results) => {
+    if (err) {
+      console.error("Error al actualizar el estado del usuario:", err);
+      res.status(500).json({ error: "Error interno del servidor" });
+      return;
+    }
+
+    res.json({ message: "Estado del usuario actualizado exitosamente" });
+  });
+});
+app.post("/agregarUsuario", upload.single("profile_pic"), (req, res) => {
+  const {
+    first_name,
+    last_name,
+    email,
+    password,
+    numTel,
+    category,
+    nickname,
+    status,
+    idDepaUsuario,
+  } = req.body;
+
+  if (!email || !email.includes("@")) {
+    return res
+      .status(400)
+      .json({ error: "El email proporcionado no es válido" });
+  }
+
+  const generatedPassword = password || Math.random().toString(36).slice(-8);
+
+  const fechaRegistro = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  const cantidadTrabajosAsignados = 0;
+
+  const profile_pic = req.file ? req.file.filename : null;
+
+  const sqlQuery = `
+    INSERT INTO usuarios (first_name, last_name, email, password, numTel, category, nickname, profile_pic, status, fechaRegistro, cantidadTrabajosAsignados, idDepaUsuario)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  `;
+
+  connection.query(
+    sqlQuery,
+    [
+      first_name,
+      last_name,
+      email,
+      generatedPassword,
+      numTel,
+      category,
+      nickname,
+      profile_pic,
+      status,
+      fechaRegistro,
+      cantidadTrabajosAsignados,
+      idDepaUsuario,
+    ],
+    (err, results) => {
+      if (err) {
+        console.error("Error al agregar el nuevo usuario:", err);
+        res.status(500).json({
+          error: "Error interno del servidor al agregar el nuevo usuario",
+        });
+        return;
+      }
+
+      res.json({ message: "Usuario agregado exitosamente" });
+    }
+  );
+});
+
+app.get("/roles", (req, res) => {
+  const sqlQuery = `
+    SELECT * FROM roles;
+;
+  `;
+
+  connection.query(sqlQuery, (err, results) => {
+    if (err) {
+      console.error("Error al obtener los usuarios inactivos:", err);
+      res.status(500).json({ error: "Error interno del servidor" });
+      return;
+    }
+
+    res.json(results);
+  });
+});
+app.get("/departamentos", (req, res) => {
+  const sqlQuery = `
+    SELECT * FROM departamentos;
+;
+  `;
+
+  connection.query(sqlQuery, (err, results) => {
+    if (err) {
+      console.error("Error al obtener los usuarios inactivos:", err);
+      res.status(500).json({ error: "Error interno del servidor" });
+      return;
+    }
+
+    res.json(results);
   });
 });
 

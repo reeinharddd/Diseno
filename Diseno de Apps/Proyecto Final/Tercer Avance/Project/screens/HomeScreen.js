@@ -16,10 +16,14 @@ import { TouchableOpacity } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 const Drawer = createDrawerNavigator();
+import userImage from "../assets/users-vector-icon-png_260862.jpg";
+import Usuarios from "./Usuarios";
+import AgregarUsuario from "../components/FormularioAgregar";
 
 const HomeScreen = () => {
   const [username, setUsername] = useState("");
   const [totalPendientes, setTotalPendientes] = useState(0);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -28,6 +32,7 @@ const HomeScreen = () => {
         if (userData !== null) {
           const { firstName } = JSON.parse(userData);
           setUsername(firstName);
+          setUserData(userData);
         }
       } catch (error) {
         console.error("Error al obtener datos del usuario:", error);
@@ -84,6 +89,10 @@ const HomeScreen = () => {
       <Drawer.Screen name='Aprobadas' component={Aprobadas} />
       <Drawer.Screen name='Pendientes' component={Pendientes} />
       <Drawer.Screen name='Desaprobadas' component={Desaprobadas} />
+      <Drawer.Screen name='Usuarios'>
+        {(props) => <Usuarios user={userData} />}
+      </Drawer.Screen>
+      <Drawer.Screen name='Agregar Usuario' component={AgregarUsuario} />
       <Drawer.Screen name='Cerrar Sesión' component={CerrarSesion} />
     </Drawer.Navigator>
   );
@@ -137,6 +146,14 @@ const HomeContent = ({ navigation, username, totalPendientes }) => {
           onPress={() => handleBoxPress("Desaprobadas")}
         />
       </View>
+
+      {/* Nuevo FAB button para Usuarios */}
+      <FAB
+        style={[styles.fab, styles.usuariosFab]}
+        icon='account-group'
+        label='Usuarios'
+        onPress={() => handleBoxPress("Usuarios")}
+      />
     </View>
   );
 };
@@ -157,10 +174,7 @@ const CustomDrawerContent = ({ navigation, username }) => {
   return (
     <DrawerContentScrollView style={{ backgroundColor: colors.surface }}>
       <View style={styles.drawerHeader}>
-        <Avatar.Image
-          size={64}
-          source={require("../resources/users-vector-icon-png_260862.jpg")} // Cambiar la ruta según la ubicación de tu imagen
-        />
+        <Avatar.Image size={64} source={userImage} />
         <Text style={[styles.drawerHeaderText, { color: colors.text }]}>
           {username}
         </Text>
@@ -186,6 +200,18 @@ const CustomDrawerContent = ({ navigation, username }) => {
       <DrawerItem
         label='Solicitudes Desaprobadas'
         onPress={() => navigation.navigate("Desaprobadas")}
+        inactiveTintColor={colors.text}
+        activeTintColor={colors.primary}
+      />
+      <DrawerItem
+        label='Usuarios'
+        onPress={() => navigation.navigate("Usuarios")}
+        inactiveTintColor={colors.text}
+        activeTintColor={colors.primary}
+      />
+      <DrawerItem
+        label='Agregar Usuario'
+        onPress={() => navigation.navigate("Agregar Usuario")}
         inactiveTintColor={colors.text}
         activeTintColor={colors.primary}
       />
@@ -243,8 +269,12 @@ const styles = StyleSheet.create({
   },
   notificationContainer: {
     position: "absolute",
-    top: 20, // Ajusta la distancia desde la parte superior
-    right: 20, // Ajusta la distancia desde la derecha
+    top: 20,
+    right: 20,
+  },
+  usuariosFab: {
+    marginBottom: 10,
+    width: "45%",
   },
 });
 

@@ -7,6 +7,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Provider as PaperProvider, DefaultTheme } from "react-native-paper";
 import LoginForm from "./components/LoginForm";
 import HomeScreen from "./screens/HomeScreen";
+import Usuarios from "./screens/Usuarios";
+import FormularioAgregar from "./components/FormularioAgregar";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -54,6 +56,16 @@ const App = () => {
             <Stack.Screen
               name='LoginForm'
               component={LoginForm}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name='Usuarios'
+              component={Usuarios}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name='FormularioAgregar'
+              component={FormularioAgregar}
               options={{ headerShown: false }}
             />
           </Stack.Navigator>
